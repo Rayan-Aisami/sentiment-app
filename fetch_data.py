@@ -1,20 +1,17 @@
-# fetch_data.py v1.1 - Fetch Reddit posts using PRAW for sentiment analysis (secure version)
-# Changes from v1.0: Use environment variables for credentials to avoid hardcoding secrets.
-# Why? Prevents exposing passwords in code/Git. Load from .env file via python-dotenv.
-# Learning: Env vars are like hidden config—code references them, but values are external.
+# fetch_data.py v1.2 - Fetch Reddit posts using PRAW for sentiment analysis (secure + JSON save)
+# Changes from v1.1: Added save_to_json() for persisting fetched posts to file.
+# Why? Allows offline reuse, avoids repeated API calls (respects rate limits/ethics).
+# Learning: JSON serializes Python dicts/lists; use for data exchange/storage.
 
-import praw  # For Reddit API
-import os    # Built-in, for accessing env vars
-from dotenv import load_dotenv  # Loads .env file
+import praw
+import os
+from dotenv import load_dotenv
+import json  # Built-in, for JSON handling
 
-# Load .env file (call this early)
 load_dotenv()
 
 def authenticate_reddit():
-    """
-    Authenticates with Reddit API using env vars from .env.
-    Returns a Reddit instance for querying.
-    """
+    # (Unchanged from v1.1)
     reddit = praw.Reddit(
         client_id=os.getenv("REDDIT_CLIENT_ID"),
         client_secret=os.getenv("REDDIT_CLIENT_SECRET"),
@@ -25,28 +22,39 @@ def authenticate_reddit():
     return reddit
 
 def fetch_posts(keyword, subreddit="all", limit=10):
-    """
-    Fetches posts from a subreddit containing the keyword.
-    Args: keyword (str), subreddit (str, e.g., 'news' or 'all'), limit (int)
-    Returns: list of dicts [{'text': 'post title and body'}, ...]
-    """
+    # (Unchanged from v1.1)
     reddit = authenticate_reddit()
     posts = []
     try:
-        # Search subreddit for keyword, get top results (or use .hot()/.new() for alternatives)
         for submission in reddit.subreddit(subreddit).search(keyword, limit=limit):
-            text = submission.title + " " + submission.selftext  # Combine title and body
+            text = submission.title + " " + submission.selftext
             posts.append({"text": text})
         return posts
     except Exception as e:
         print(f"Error fetching posts: {e}")
-        return []  # Fallback empty list
+        return []
+
+def save_to_json(posts, filename="fetched_posts.json"):
+    """
+    Saves the list of posts to a JSON file.
+    Args: posts (list of dicts), filename (str)
+    """
+    try:
+        with open(filename, 'w', encoding='utf-8') as f:
+            json.dump(posts, f, ensure_ascii=False, indent=4)  # Pretty-print for readability
+        print(f"Saved {len(posts)} posts to {filename}")
+    except Exception as e:
+        print(f"Error saving to JSON: {e}")
 
 # Test the functions
 if __name__ == "__main__":
-    keyword = "AI"  # Test keyword; in app, this will be user input
-    subreddit = "all"  # 'all' searches across Reddit; try 'technology' for specific
+    keyword = "AI"
+    subreddit = "all"
     posts = fetch_posts(keyword, subreddit=subreddit, limit=5)
     print(f"Fetched {len(posts)} posts for '{keyword}' from r/{subreddit}:")
     for post in posts:
-        print(post['text'][:100] + "...")  # Print truncated for console; full in app
+        print(post['text'][:100] + "...")
+    
+    # New: Save to JSON for persistence
+    if posts:  # Only save if fetched successfully
+        save_to_json(posts)

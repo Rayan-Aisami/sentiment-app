@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head><title>Sentiment App</title></head>
+<body>
+    <h1>Reddit Sentiment Analysis</h1>
+    <form method="POST">
+        Keyword: <input type="text" name="keyword" required><br>
+        Subreddit: <input type="text" name="subreddit" value="all"><br>
+        Limit: <input type="number" name="limit" value="10"><br>
+        <input type="submit" value="Analyze">
+    </form>
+    {% if error %}<p>{{ error }}</p>{% endif %}
+    {% if agg %}
+        <h2>Results for "{{ keyword }}" in r/{{ subreddit }}</h2>
+        <p>Counts: {{ agg.counts }}</p>
+        <p>Percentages: {{ agg.percentages }}</p>
+    {% endif %}
+</body>
+</html>
